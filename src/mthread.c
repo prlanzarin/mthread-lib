@@ -76,6 +76,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	context->uc_link = &(main_tcb->context);
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(stack);
+	makecontext(context, (void (*)(void)) start, 1, arg);
 
 	return tcb->tid;
 }
