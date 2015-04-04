@@ -15,16 +15,16 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 
 	getcontext(&cur_context);
 	if (executando == NULL) {
-	/* mcreate é chamado pela primeira vez. Cria um TCB_t para main e
+	/* mcreate é chamado pela primeira vez. Cria um TCB_t para main_tcb e
 	 * coloca na fila de apto (ou executando? Logo saberemos) */
-		TCB_t *main;	   
-		main = malloc(sizeof(TCB_t));
-		main->tid = 0;
-		main->prio = 0;
-		main->context = cur_context;
-		main->prev = NULL;
-		main->next = NULL;
-		apto[0] = main;
+		TCB_t *main_tcb;	   
+		main_tcb = malloc(sizeof(TCB_t));
+		main_tcb->tid = 0;
+		main_tcb->prio = 0;
+		main_tcb->context = cur_context;
+		main_tcb->prev = NULL;
+		main_tcb->next = NULL;
+		apto[0] = main_tcb;
 	}
 
 	char new_stack[SIGSTKSZ];
