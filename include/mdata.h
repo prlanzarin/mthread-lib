@@ -7,6 +7,8 @@
 #ifndef __mdata__
 #define __mdata__
 
+#include <ucontext.h>
+
 /* NÃO ALTERAR ESSA struct */
 typedef struct TCB { 
 	int  tid;		// identificador da thread 
