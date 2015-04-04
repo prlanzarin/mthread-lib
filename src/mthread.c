@@ -27,9 +27,9 @@ int initialize()
 
 int mcreate(int prio, void (*start)(void*), void *arg)
 {
-	ucontext_t cur_context, new_context;
+	ucontext_t *new_context;
 
-	getcontext(&cur_context);
+	getcontext(new_context);
 	if (executando == NULL) {
 	/* primeira função de mthread chamada. */
 		initialize();
