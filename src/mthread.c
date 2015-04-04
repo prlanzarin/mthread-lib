@@ -15,8 +15,8 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 
 	getcontext(&cur_context);
 	if (executando == NULL) {
-	/* mcreate é chamado pela primeira vez. Cria um TCB_t para main_tcb e
-	 * coloca na fila de apto (ou executando? Logo saberemos) */
+	/* mcreate é chamado pela primeira vez. Cria um TCB_t para main e
+	 * colocado no processador (executando) */
 		TCB_t *main_tcb;	   
 		main_tcb = malloc(sizeof(TCB_t));
 		main_tcb->tid = 0;
@@ -24,7 +24,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 		main_tcb->context = cur_context;
 		main_tcb->prev = NULL;
 		main_tcb->next = NULL;
-		apto[0] = main_tcb;
+		executando = main_tcb;
 	}
 
 	char new_stack[SIGSTKSZ];
