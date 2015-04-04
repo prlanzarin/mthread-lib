@@ -29,12 +29,12 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 {
 	ucontext_t *new_context;
 
+	new_context = malloc(sizeof(ucontext_t));
 	getcontext(new_context);
 	if (main_tcb == NULL) {
 	/* primeira função de mthread chamada. */
 		initialize();
 	}
 
-	printf("%d\n", new_context->uc_link);
 	char new_stack[SIGSTKSZ];
 }
