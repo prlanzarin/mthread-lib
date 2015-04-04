@@ -15,11 +15,13 @@ INC_DIR=./include
 BIN_DIR=./bin
 SRC_DIR=./src
 
-all: mthread.o
+all: mthread.o libmthread.a
 
 mthread.o: $(INC_DIR)/mthread.h $(SRC_DIR)/mthread.c
 	$(CC) -c -o $(BIN_DIR)/mthread.o $(SRC_DIR)/mthread.c -Wall
 
+libmthread.a: mthread.o
+	mkdir -p $(LIB_DIR) && ar rcs $(LIB_DIR)/libmthread.a $(BIN_DIR)/*.o
 #regra2: #dependências para a regra2
 #	$(CC) -o $(BIN_DIR)regra2 $(SRC_DIR)regra2.c -Wall
 
