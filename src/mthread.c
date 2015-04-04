@@ -4,11 +4,13 @@
 #include "../include/mdata.h"
 #include "../include/mthread.h"
 #define NUM_PRIO_LVLS 3
+#define MAX_THREADS 64
 
 TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
 TCB_t *bloqueado = NULL;
-TCB_t *main_tcb = NULL;
+TCB_t main_tcb;
+TCB_t *concluido = NULL;
 int tids = 0;
 int scheduler();
 int initialize();
@@ -17,24 +19,21 @@ int initialize();
  * contexto da 'main_tcb' e a coloca no estado 'executando' */
 int initialize()
 {
-	ucontext_t *context;
 	char stack[SIGSTKSZ];
 
-	main_tcb = malloc(sizeof(TCB_t));
-	main_tcb->tid = tids++;
-	main_tcb->prio = 0; /* prioridade alta */
-	main_tcb->prev = NULL;
-	main_tcb->next = NULL;
+	main_tcb.tid = tids++;
+	main_tcb.prio = 0; /* prioridade alta */
+	main_tcb.prev = NULL;
+	main_tcb.next = NULL;
 
-	getcontext(&(main_tcb->context));
-	context = &(main_tcb->context);
-	context->uc_link = NULL; /* FIXME */
-	context->uc_stack.ss_sp = stack;
-	context->uc_stack.ss_size = sizeof(stack);
+	getcontext(&main_tcb.context);
+	main_tcb.context.uc_link = NULL; /* FIXME */
+	main_tcb.context.uc_stack.ss_sp = stack;
+	main_tcb.context.uc_stack.ss_size = sizeof(stack);
 
-	makecontext(context, (void (*)(void)) scheduler, 0);
+	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
 
-	executando = main_tcb;
+	executando = &main_tcb;
 	return 0;
 }
 
@@ -42,7 +41,7 @@ int initialize()
 int scheduler()
 {
 	printf("I'm the scheduler\n");
-	return 0;
+	exit(0);
 }
 
 int mcreate(int prio, void (*start)(void*), void *arg)
@@ -56,7 +55,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 		return -1;
 	}
 
-	if (main_tcb == NULL) {
+	if (executando == NULL) {
 	/* primeira função de mthread chamada. */
 		initialize();
 	}
@@ -71,12 +70,31 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 
 	/* cria novo contexto a partir a partir do atual. */
 	/* context é só pra facilitar o acesso a tcb->context */
-	getcontext(&(tcb->context));
-	context = &(tcb->context);
-	context->uc_link = &(main_tcb->context);
+	getcontext(&tcb->context);
+	context = &tcb->context;
+	context->uc_link = &(main_tcb.context);
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(stack);
 	makecontext(context, (void (*)(void)) start, 1, arg);
 
 	return tcb->tid;
+}
+
+int scan_tid(int tid, TCB_t *ptr)
+{
+	if (ptr == NULL)
+		return -1;
+	if (ptr->tid == tid)
+		return tid;
+	else
+		return scan_tid(tid, ptr->next);
+
+}
+
+int mwait(int tid)
+{
+	if (scan_tid(tid, concluido) > -1)
+		return 0; /* concluiu */
+	setcontext(&main_tcb.context);
+	return -1; /* nunca deve ser invocado */
 }
