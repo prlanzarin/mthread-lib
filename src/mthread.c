@@ -37,13 +37,28 @@ int initialize()
 	return 0;
 }
 
+int dispatch(TCB_t *task)
+{
+	executando = task;
+	setcontext(&task->context);
+	return -1; /* algo deu errado */
+}
+
 /* a principal função da biblioteca, responsável por gerenciar as tarefas */
 int scheduler()
 {
+	int i;
+	TCB_t *task;
 	printf("I'm the scheduler\n");
+	getcontext(&main_tcb.context);
+	i = 0;
+	while (i < NUM_PRIO_LVLS && (task = dequeue(apto[i])) != NULL) {
+		dispatch(task);
+		i++;
+	}
+	printf("All queues empty. Leaving. \n");
 	exit(0);
 }
-
 int mcreate(int prio, void (*start)(void*), void *arg)
 {
 	ucontext_t *context;
@@ -65,8 +80,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	tcb->tid = tids++;
 	tcb->prio = prio;
 	tcb->prev = NULL;
-	tcb->next = apto[prio];
-	apto[prio] = tcb;
+	apto[prio] = enqueue(tcb, apto[prio]);
 
 	/* cria novo contexto a partir a partir do atual. */
 	/* context é só pra facilitar o acesso a tcb->context */
@@ -75,7 +89,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	context->uc_link = &(main_tcb.context);
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(stack);
-	makecontext(context, (void (*)(void)) start, 1, arg);
+	makecontext(context, (void (*)()) start, 1, arg);
 
 	return tcb->tid;
 }

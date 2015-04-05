@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int mais_2(int x)
+int mais_2(void *arg)
 {
 	int res;
+	int x;
+	x = *((int *) arg);
 	res = x + 2;
-	printf("mais_2: %d\n", res);
+	printf("%d mais_2: %d\n", x, res);
 	return res;
 }
 
@@ -14,7 +16,7 @@ int main()
 {
 	int x = 5;
 	int tid;
-	tid = mcreate(0, (void (*)(void *)) mais_2, &x);
+	tid = mcreate(0, (void (*)(void *)) mais_2, (void *) &x);
 	mwait(tid);
 	return 0;
 }
