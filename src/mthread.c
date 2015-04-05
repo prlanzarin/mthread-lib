@@ -58,6 +58,7 @@ int scheduler()
 	if (executando != NULL) {
 	/* uma tarefa só chega aqui diretamente após término */
 		executando->state = TERMINO;
+		free(executando->context.uc_stack.ss_sp);
 		enqueue(executando, concluido);
 	}
 	i = 0;
