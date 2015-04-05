@@ -5,6 +5,7 @@
 #include "../include/mthread.h"
 #define NUM_PRIO_LVLS 3
 #define MAX_THREADS 64
+enum state_t { CRIACAO, APTO, EXECUCAO, BLOQUEADO, TERMINO };
 
 TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
@@ -23,6 +24,7 @@ int initialize()
 
 	main_tcb.tid = tids++;
 	main_tcb.prio = 0; /* prioridade alta */
+	main_tcb.state = CRIACAO; /* FIXME devemos colocar main em executanto */
 	main_tcb.prev = NULL;
 	main_tcb.next = NULL;
 
@@ -33,7 +35,7 @@ int initialize()
 
 	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
 
-	executando = &main_tcb;
+//	executando = &main_tcb;
 	return 0;
 }
 
@@ -49,8 +51,13 @@ int scheduler()
 {
 	int i;
 	TCB_t *task;
-	printf("I'm the scheduler\n");
 	getcontext(&main_tcb.context);
+	printf("I'm the scheduler\n");
+	if (executando != NULL) {
+	/* uma tarefa só chega aqui diretamente após término */
+		executando->state = TERMINO;
+		enqueue(executando, concluido);
+	}
 	i = 0;
 	while (i < NUM_PRIO_LVLS && (task = dequeue(apto[i])) != NULL) {
 		dispatch(task);
@@ -59,6 +66,7 @@ int scheduler()
 	printf("All queues empty. Leaving. \n");
 	exit(0);
 }
+
 int mcreate(int prio, void (*start)(void*), void *arg)
 {
 	ucontext_t *context;
@@ -89,7 +97,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	context->uc_link = &(main_tcb.context);
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(stack);
-	makecontext(context, (void (*)()) start, 1, arg);
+	makecontext(context, (void (*)(void)) start, 1, arg);
 
 	return tcb->tid;
 }
