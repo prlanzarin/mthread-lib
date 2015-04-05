@@ -68,7 +68,7 @@ int scheduler()
 		else
 			dispatch(task);
 	}
-	/* FIXME checar demais filas */
+	/* TODO checar demais filas */
 	printf("All queues empty. Leaving. \n");
 	exit(0);
 }

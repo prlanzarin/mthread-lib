@@ -10,6 +10,7 @@
 # 
 
 CC=gcc
+DEBUG="-g" # TODO tratar como opção do usuário 
 LIB_DIR=./lib
 INC_DIR=./include
 BIN_DIR=./bin
@@ -18,11 +19,11 @@ SRC_DIR=./src
 all: mdata.o mthread.o libmthread.a
 
 mthread.o: $(INC_DIR)/mthread.h $(SRC_DIR)/mthread.c
-	$(CC) -c -o $(BIN_DIR)/mthread.o $(SRC_DIR)/mthread.c -Wall
+	$(CC) $(DEBUG) -c -o $(BIN_DIR)/mthread.o $(SRC_DIR)/mthread.c -Wall
 
 
 mdata.o: $(INC_DIR)/mdata.h $(SRC_DIR)/mdata.c
-	$(CC) -c -o $(BIN_DIR)/mdata.o $(SRC_DIR)/mdata.c -Wall
+	$(CC) $(DEBUG) -c -o $(BIN_DIR)/mdata.o $(SRC_DIR)/mdata.c -Wall
 
 libmthread.a: mthread.o
 	mkdir -p $(LIB_DIR) && ar rcs $(LIB_DIR)/libmthread.a $(BIN_DIR)/*.o
