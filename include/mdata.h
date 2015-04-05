@@ -20,4 +20,7 @@ typedef struct TCB {
 	struct TCB   *next;		// ponteiro para o próximo TCB da lista 
 } TCB_t; 
 
+int queue_size(TCB_t *queue);
+TCB_t *enqueue(TCB_t *tcb, TCB_t *queue);
+TCB_t *dequeue(TCB_t *queue);
 #endif

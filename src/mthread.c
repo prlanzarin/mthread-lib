@@ -43,6 +43,7 @@ int dispatch(TCB_t *task)
 {
 	task->state = EXECUCAO;
 	executando = task;
+	printf("dispatching task %d with prio %d\n", task->tid, task->prio);
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
 }
@@ -62,6 +63,7 @@ int scheduler()
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
 	while (i < NUM_PRIO_LVLS) {
+		printf("queue size: %d\n", queue_size(apto[0]));
 		if ((task = dequeue(apto[i])) == NULL)
 			i++;
 		else
@@ -92,6 +94,7 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	tcb = malloc(sizeof(TCB_t));
 	tcb->tid = tids++;
 	tcb->prio = prio;
+	tcb->state = CRIACAO;
 	tcb->prev = NULL;
 	apto[prio] = enqueue(tcb, apto[prio]);
 
