@@ -24,7 +24,7 @@ int initialize()
 
 	main_tcb.tid = tids++;
 	main_tcb.prio = 0; /* prioridade alta */
-	main_tcb.state = CRIACAO; /* FIXME devemos colocar main em executanto */
+	main_tcb.state = CRIACAO; /* FIXME devemos colocar main em executanto?*/
 	main_tcb.prev = NULL;
 	main_tcb.next = NULL;
 
@@ -41,6 +41,7 @@ int initialize()
 
 int dispatch(TCB_t *task)
 {
+	task->estado = EXECUTANDO;
 	executando = task;
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
@@ -63,6 +64,7 @@ int scheduler()
 		dispatch(task);
 		i++;
 	}
+	/* FIXME checar demais filas */
 	printf("All queues empty. Leaving. \n");
 	exit(0);
 }
