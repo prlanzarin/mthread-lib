@@ -41,7 +41,7 @@ int initialize()
 
 int dispatch(TCB_t *task)
 {
-	task->estado = EXECUTANDO;
+	task->state = EXECUCAO;
 	executando = task;
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
@@ -60,9 +60,12 @@ int scheduler()
 		enqueue(executando, concluido);
 	}
 	i = 0;
-	while (i < NUM_PRIO_LVLS && (task = dequeue(apto[i])) != NULL) {
-		dispatch(task);
-		i++;
+	/* checa fila de aptos em ordem (alta -> baixa) */
+	while (i < NUM_PRIO_LVLS) {
+		if ((task = dequeue(apto[i])) == NULL)
+			i++;
+		else
+			dispatch(task);
 	}
 	/* FIXME checar demais filas */
 	printf("All queues empty. Leaving. \n");
@@ -92,8 +95,8 @@ int mcreate(int prio, void (*start)(void*), void *arg)
 	tcb->prev = NULL;
 	apto[prio] = enqueue(tcb, apto[prio]);
 
-	/* cria novo contexto a partir a partir do atual. */
-	/* context é só pra facilitar o acesso a tcb->context */
+	/* cria novo contexto a partir do atual. */
+	/* 'context' é só pra facilitar o acesso a tcb->context */
 	getcontext(&tcb->context);
 	context = &tcb->context;
 	context->uc_link = &(main_tcb.context);
