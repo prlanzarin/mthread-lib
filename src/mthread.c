@@ -74,7 +74,7 @@ int scheduler()
 	exit(0);
 }
 
-int mcreate(int prio, void (*start)(void*), void *arg)
+int mcreate(int prio, void *(*start)(void*), void *arg)
 {
 	ucontext_t *context;
 	TCB_t *tcb;
