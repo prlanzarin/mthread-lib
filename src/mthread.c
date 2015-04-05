@@ -77,7 +77,8 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 {
 	ucontext_t *context;
 	TCB_t *tcb;
-	char stack[SIGSTKSZ];
+	char *stack;
+	stack = malloc(sizeof(char) * SIGSTKSZ);
 
 	if (prio < 0 || prio > NUM_PRIO_LVLS - 1) {
 		printf("error: invalid priority level: %d\n", prio);
@@ -103,7 +104,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	context = &tcb->context;
 	context->uc_link = &(main_tcb.context);
 	context->uc_stack.ss_sp = stack;
-	context->uc_stack.ss_size = sizeof(stack);
+	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
 
 	return tcb->tid;
