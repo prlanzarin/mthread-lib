@@ -15,6 +15,7 @@ TCB_t *concluido = NULL;
 int tids = 0;
 int scheduler();
 int initialize();
+int first_call = 0;
 
 /* Aloca espaço pra TCB da main thread. Associa a função 'scheduler' ao
  * contexto da 'main_tcb' e a coloca no estado 'executando' */
@@ -22,6 +23,7 @@ int initialize()
 {
 	char stack[SIGSTKSZ];
 
+	first_call = 1;
 	main_tcb.tid = tids++;
 	main_tcb.prio = 0; /* prioridade alta */
 	main_tcb.state = CRIACAO; /* FIXME devemos colocar main em executanto?*/
@@ -43,7 +45,6 @@ int dispatch(TCB_t *task)
 {
 	task->state = EXECUCAO;
 	executando = task;
-	printf("dispatching task %d with prio %d\n", task->tid, task->prio);
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
 }
@@ -53,8 +54,7 @@ int scheduler()
 {
 	int i;
 	TCB_t *task;
-	getcontext(&main_tcb.context);
-	printf("I'm the scheduler\n");
+
 	if (executando != NULL) {
 	/* uma tarefa só chega aqui diretamente após término */
 		executando->state = TERMINO;
@@ -63,8 +63,7 @@ int scheduler()
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
 	while (i < NUM_PRIO_LVLS) {
-		printf("queue size: %d\n", queue_size(apto[0]));
-		if ((task = dequeue(apto[i])) == NULL)
+		if ((task = dequeue(&apto[i])) == NULL)
 			i++;
 		else
 			dispatch(task);
@@ -85,7 +84,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 		return -1;
 	}
 
-	if (executando == NULL) {
+	if (first_call == 0) {
 	/* primeira função de mthread chamada. */
 		initialize();
 	}

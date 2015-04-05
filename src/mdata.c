@@ -24,17 +24,21 @@ TCB_t *enqueue(TCB_t *tcb, TCB_t *queue)
 }
 
 /* Remove o último elemento da fila (primeiro a ser adicionado) e retorna-o */
-TCB_t *dequeue(TCB_t *queue)
+TCB_t *dequeue(TCB_t **queue)
 {
 	TCB_t *ptr, *prev;
-	ptr = queue;
+	ptr = *queue;
 	prev = ptr;
 	if (ptr == NULL)
 		return ptr;
+	if (ptr->next == NULL) {
+		*queue = NULL;
+		return ptr;
+	}
 
 	while (ptr->next != NULL) {
-		ptr = ptr->next;
 		prev = ptr;
+		ptr = ptr->next;
 	}
 
 	prev->next = NULL;
