@@ -12,32 +12,48 @@ TCB_t *executando = NULL;
 TCB_t *bloqueado = NULL;
 TCB_t main_tcb;
 TCB_t *concluido = NULL;
-int tids = 0;
+int tids = 1;
+ucontext_t sched_context;
+char sched_stack[SIGSTKSZ];
 int scheduler();
 int initialize();
 int first_call = 0;
 
-/* Aloca espaço pra TCB da main thread. Associa a função 'scheduler' ao
- * contexto da 'main_tcb' e a coloca no estado 'executando' */
+void update_main_context()
+{
+	getcontext(&main_tcb.context);
+}
+
+/* Aloca espaço pra TCB da main thread. Inicializa o contexto do
+ * escalonador e associa a função 'scheduler' à sua ativação.
+ */
 int initialize()
 {
 	char stack[SIGSTKSZ];
-
 	first_call = 1;
-	main_tcb.tid = tids++;
-	main_tcb.prio = 0; /* prioridade alta */
-	main_tcb.state = CRIACAO; /* FIXME devemos colocar main em executanto?*/
-	main_tcb.prev = NULL;
-	main_tcb.next = NULL;
+	/* creates scheduler context */
+	getcontext(&sched_context);
+	sched_context.uc_link = NULL; /* FIXME */
+	sched_context.uc_stack.ss_sp = sched_stack;
+	sched_context.uc_stack.ss_size = sizeof(sched_stack);
+	makecontext(&sched_context, (void (*)(void)) scheduler, 0);
 
+	main_tcb.tid = 0;
+	main_tcb.prio = 0; /* prioridade alta */
+	main_tcb.state = APTO;
+	main_tcb.prev = NULL;
+
+	/*
 	getcontext(&main_tcb.context);
-	main_tcb.context.uc_link = NULL; /* FIXME */
+	main_tcb.context.uc_link = &sched_context; 
 	main_tcb.context.uc_stack.ss_sp = stack;
 	main_tcb.context.uc_stack.ss_size = sizeof(stack);
 
 	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
+	*/
+	enqueue(&main_tcb, apto[0]);
 
-//	executando = &main_tcb;
+	executando = &main_tcb;
 	return 0;
 }
 
@@ -69,9 +85,13 @@ int scheduler()
 		else
 			dispatch(task);
 	}
-	/* TODO checar demais filas */
-	printf("All queues empty. Leaving. \n");
-	exit(0);
+	
+	if ((task = dequeue(&bloqueado)) == NULL) {
+		printf("All queues empty. Leaving. \n");
+		return 0;
+	}
+	dispatch(task);
+	return 0;
 }
 
 int mcreate(int prio, void *(*start)(void*), void *arg)
@@ -86,10 +106,6 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 		return -1;
 	}
 
-	if (first_call == 0) {
-	/* primeira função de mthread chamada. */
-		initialize();
-	}
 
 	/* Cria nova TCB e insere na fila de prioridades */
 	tcb = malloc(sizeof(TCB_t));
@@ -103,29 +119,60 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	/* 'context' é só pra facilitar o acesso a tcb->context */
 	getcontext(&tcb->context);
 	context = &tcb->context;
-	context->uc_link = &(main_tcb.context);
+	context->uc_link = &sched_context;
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
 
+	if (first_call == 0) {
+	/* primeira função de mthread chamada. */
+	/* inicializa ao fim para que a main thread esteja associada
+	 * ao fluxo principal do programa
+	 */
+		initialize();
+	}
+	update_main_context();
 	return tcb->tid;
 }
 
-int scan_tid(int tid, TCB_t *ptr)
-{
-	if (ptr == NULL)
-		return -1;
-	if (ptr->tid == tid)
-		return tid;
-	else
-		return scan_tid(tid, ptr->next);
 
-}
 
 int mwait(int tid)
 {
-	if (scan_tid(tid, concluido) > -1)
-		return 0; /* concluiu */
-	setcontext(&main_tcb.context);
-	return -1; /* nunca deve ser invocado */
+	int i, found = 0;
+	TCB_t *ptr;
+	/* bloqueia main thread */
+	executando->state = BLOQUEADO;
+	enqueue(executando, bloqueado);
+
+	/* busca primeiro nas filas de apto */
+	while (i < NUM_PRIO_LVLS && found == 0) {
+		if ((ptr = search_queue(tid, apto[0])) != NULL) {
+			found = 1;
+		}
+		i++;
+	}
+	if (found == 0)
+		ptr = search_queue(tid, bloqueado);
+	if (found == 0)
+		ptr = search_queue(tid, concluido);
+	if (ptr == NULL) {
+		printf("tid não encontrado\n");
+		return -1;
+	}
+ 
+	ptr->context.uc_link = &main_tcb.context;
+
+	swapcontext(&main_tcb.context, &sched_context);
+	return 0; /* nunca deve ser invocado */
+}
+
+int myield(void)
+{
+	executando->state = APTO;
+	enqueue(executando, apto[executando->tid]);
+	if (setcontext(&main_tcb.context) == -1)
+		return -1;
+	update_main_context();
+	return 0;
 }

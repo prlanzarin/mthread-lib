@@ -16,6 +16,25 @@ int queue_size(TCB_t *queue)
 	return size;
 }
 
+/* busca por 'tid' na fila. Retorna um ponteiro pro TCB_t encontrado, ou
+ * NULL caso não o encontre.
+ */
+TCB_t *search_queue(int tid, TCB_t *queue)
+{
+	int i = 0;
+	TCB_t *ptr;
+	ptr = queue;
+	if (ptr == NULL)
+		return NULL;
+	while (ptr != NULL) {
+		if (ptr->tid == tid) {
+			return ptr;
+		}
+		ptr = ptr->next;
+	}
+	return NULL; /* não encontrou */
+}
+
 /* Adiciona elem ao início da fila */
 TCB_t *enqueue(TCB_t *tcb, TCB_t *queue)
 {
