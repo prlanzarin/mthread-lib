@@ -47,9 +47,9 @@ int initialize()
 
 	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
 	*/
-//	enqueue(&main_tcb, apto[0]);
+	enqueue(&main_tcb, &apto[0]);
 
-	executando = &main_tcb;
+	executando = NULL;
 	return 0;
 }
 
@@ -74,7 +74,7 @@ int scheduler()
 		printf("finishing task %d\n", executando->tid);
 		executando->state = TERMINO;
 		free(executando->context.uc_stack.ss_sp);
-		enqueue(executando, termino);
+		enqueue(executando, &termino);
 	}
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
@@ -112,7 +112,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	tcb->prio = prio;
 	tcb->state = APTO;
 	tcb->prev = NULL;
-	apto[prio] = enqueue(tcb, apto[prio]);
+	enqueue(tcb, &apto[prio]);
 
 	/* cria novo contexto a partir do atual. */
 	/* 'context' é só pra facilitar o acesso a tcb->context */
@@ -130,8 +130,8 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	 */
 		initialize();
 	}
-//	swapcontext(&main_tcb.context, &sched_context);
-	getcontext(&main_tcb.context);
+	swapcontext(&main_tcb.context, &sched_context);
+//	getcontext(&main_tcb.context);
 	return tcb->tid;
 }
 
@@ -143,7 +143,7 @@ int mwait(int tid)
 	TCB_t *ptr;
 	/* bloqueia main thread */
 	main_tcb.state = BLOQUEADO;
-	enqueue(&main_tcb, bloqueado);
+	enqueue(&main_tcb, &bloqueado);
 	executando = NULL;
 
 	i = 0;
@@ -168,7 +168,7 @@ int mwait(int tid)
 	swapcontext(&main_tcb.context, &sched_context);
 	/* tid terminou */
 	main_tcb.state = APTO;
-	enqueue(&main_tcb, apto[0]);
+	enqueue(&main_tcb, &apto[0]);
 	swapcontext(&main_tcb.context, &sched_context);
 	return 0;
 }
@@ -176,9 +176,7 @@ int mwait(int tid)
 int myield(void)
 {
 	executando->state = APTO;
-	enqueue(executando, apto[executando->tid]);
-	if (setcontext(&main_tcb.context) == -1)
-		return -1;
-	getcontext(&main_tcb.context);
+	enqueue(executando, &apto[executando->tid]);
+	swapcontext(&main_tcb.context, &sched_context);
 	return 0;
 }

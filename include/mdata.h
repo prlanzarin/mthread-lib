@@ -21,7 +21,7 @@ typedef struct TCB {
 } TCB_t; 
 
 int queue_size(TCB_t *queue);
-TCB_t *enqueue(TCB_t *tcb, TCB_t *queue);
+void enqueue(TCB_t *tcb, TCB_t **queue);
 TCB_t *dequeue(TCB_t **queue);
 TCB_t *search_queue(int tid, TCB_t *queue);
 #endif

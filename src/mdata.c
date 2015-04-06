@@ -36,10 +36,10 @@ TCB_t *search_queue(int tid, TCB_t *queue)
 }
 
 /* Adiciona elem ao início da fila */
-TCB_t *enqueue(TCB_t *tcb, TCB_t *queue)
+void enqueue(TCB_t *tcb, TCB_t **queue)
 {
-	tcb->next = queue;
-	return tcb;
+	tcb->next = *queue;
+	*queue = tcb;
 }
 
 /* Remove o último elemento da fila (primeiro a ser adicionado) e retorna-o */
