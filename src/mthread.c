@@ -19,10 +19,6 @@ int scheduler();
 int initialize();
 int first_call = 0;
 
-void update_main_context()
-{
-	getcontext(&main_tcb.context);
-}
 
 /* Aloca espaço pra TCB da main thread. Inicializa o contexto do
  * escalonador e associa a função 'scheduler' à sua ativação.
@@ -75,15 +71,10 @@ int scheduler()
 
 	if (executando != NULL) {
 	/* uma tarefa só chega aqui diretamente após término */
-		if (executando->tid == 0) {
-			printf("running main thread\n");
-			enqueue(&main_tcb, apto[0]); /* não mata a main thread */
-		} else {
-			printf("finishing task %d\n", executando->tid);
-			executando->state = TERMINO;
-			free(executando->context.uc_stack.ss_sp);
-			enqueue(executando, termino);
-		}
+		printf("finishing task %d\n", executando->tid);
+		executando->state = TERMINO;
+		free(executando->context.uc_stack.ss_sp);
+		enqueue(executando, termino);
 	}
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
@@ -140,7 +131,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 		initialize();
 	}
 //	swapcontext(&main_tcb.context, &sched_context);
-	update_main_context();
+	getcontext(&main_tcb.context);
 	return tcb->tid;
 }
 
@@ -155,9 +146,10 @@ int mwait(int tid)
 	enqueue(&main_tcb, bloqueado);
 	executando = NULL;
 
+	i = 0;
 	/* busca primeiro nas filas de apto */
 	while (i < NUM_PRIO_LVLS && found == 0) {
-		if ((ptr = search_queue(tid, apto[0])) != NULL) {
+		if ((ptr = search_queue(tid, apto[i])) != NULL) {
 			found = 1;
 		}
 		i++;
@@ -187,6 +179,6 @@ int myield(void)
 	enqueue(executando, apto[executando->tid]);
 	if (setcontext(&main_tcb.context) == -1)
 		return -1;
-	update_main_context();
+	getcontext(&main_tcb.context);
 	return 0;
 }
