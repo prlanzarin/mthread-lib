@@ -11,7 +11,7 @@ TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
 TCB_t *bloqueado = NULL;
 TCB_t main_tcb;
-TCB_t *concluido = NULL;
+TCB_t *termino = NULL;
 int tids = 1;
 ucontext_t sched_context;
 char sched_stack[SIGSTKSZ];
@@ -51,14 +51,16 @@ int initialize()
 
 	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
 	*/
-	enqueue(&main_tcb, apto[0]);
+//	enqueue(&main_tcb, apto[0]);
 
 	executando = &main_tcb;
 	return 0;
 }
 
+
 int dispatch(TCB_t *task)
 {
+	printf("executing task %d\n", task->tid);
 	task->state = EXECUCAO;
 	executando = task;
 	setcontext(&task->context);
@@ -73,9 +75,15 @@ int scheduler()
 
 	if (executando != NULL) {
 	/* uma tarefa só chega aqui diretamente após término */
-		executando->state = TERMINO;
-		free(executando->context.uc_stack.ss_sp);
-		enqueue(executando, concluido);
+		if (executando->tid == 0) {
+			printf("running main thread\n");
+			enqueue(&main_tcb, apto[0]); /* não mata a main thread */
+		} else {
+			printf("finishing task %d\n", executando->tid);
+			executando->state = TERMINO;
+			free(executando->context.uc_stack.ss_sp);
+			enqueue(executando, termino);
+		}
 	}
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
@@ -111,7 +119,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	tcb = malloc(sizeof(TCB_t));
 	tcb->tid = tids++;
 	tcb->prio = prio;
-	tcb->state = CRIACAO;
+	tcb->state = APTO;
 	tcb->prev = NULL;
 	apto[prio] = enqueue(tcb, apto[prio]);
 
@@ -131,6 +139,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	 */
 		initialize();
 	}
+//	swapcontext(&main_tcb.context, &sched_context);
 	update_main_context();
 	return tcb->tid;
 }
@@ -142,8 +151,9 @@ int mwait(int tid)
 	int i, found = 0;
 	TCB_t *ptr;
 	/* bloqueia main thread */
-	executando->state = BLOQUEADO;
-	enqueue(executando, bloqueado);
+	main_tcb.state = BLOQUEADO;
+	enqueue(&main_tcb, bloqueado);
+	executando = NULL;
 
 	/* busca primeiro nas filas de apto */
 	while (i < NUM_PRIO_LVLS && found == 0) {
@@ -155,7 +165,7 @@ int mwait(int tid)
 	if (found == 0)
 		ptr = search_queue(tid, bloqueado);
 	if (found == 0)
-		ptr = search_queue(tid, concluido);
+		ptr = search_queue(tid, termino);
 	if (ptr == NULL) {
 		printf("tid não encontrado\n");
 		return -1;
@@ -164,7 +174,11 @@ int mwait(int tid)
 	ptr->context.uc_link = &main_tcb.context;
 
 	swapcontext(&main_tcb.context, &sched_context);
-	return 0; /* nunca deve ser invocado */
+	/* tid terminou */
+	main_tcb.state = APTO;
+	enqueue(&main_tcb, apto[0]);
+	swapcontext(&main_tcb.context, &sched_context);
+	return 0;
 }
 
 int myield(void)
