@@ -19,11 +19,11 @@ SRC_DIR=./src
 all: mdata.o mthread.o libmthread.a
 
 mthread.o: $(INC_DIR)/mthread.h $(SRC_DIR)/mthread.c
-	$(CC) $(DEBUG) -c -o $(BIN_DIR)/mthread.o $(SRC_DIR)/mthread.c -Wall
+	mkdir -p $(BIN_DIR) && $(CC) $(DEBUG) -c -o $(BIN_DIR)/mthread.o $(SRC_DIR)/mthread.c -Wall
 
 
 mdata.o: $(INC_DIR)/mdata.h $(SRC_DIR)/mdata.c
-	$(CC) $(DEBUG) -c -o $(BIN_DIR)/mdata.o $(SRC_DIR)/mdata.c -Wall
+	mkdir -p $(BIN_DIR) && $(CC) $(DEBUG) -c -o $(BIN_DIR)/mdata.o $(SRC_DIR)/mdata.c -Wall
 
 libmthread.a: mthread.o
 	mkdir -p $(LIB_DIR) && ar rcs $(LIB_DIR)/libmthread.a $(BIN_DIR)/*.o
