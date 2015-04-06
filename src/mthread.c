@@ -13,11 +13,17 @@ TCB_t *bloqueado = NULL;
 TCB_t main_tcb;
 TCB_t *termino = NULL;
 int tids = 1;
+/* contexto do escalonador */
 ucontext_t sched_context;
 char sched_stack[SIGSTKSZ];
 int scheduler();
+
+ucontext_t terminate_context;
+char terminate_stack[SIGSTKSZ];
+
 int initialize();
 int first_call = 0;
+void terminate();
 
 
 /* Aloca espaço pra TCB da main thread. Inicializa o contexto do
@@ -33,6 +39,13 @@ int initialize()
 	sched_context.uc_stack.ss_sp = sched_stack;
 	sched_context.uc_stack.ss_size = sizeof(sched_stack);
 	makecontext(&sched_context, (void (*)(void)) scheduler, 0);
+
+	getcontext(&terminate_context);
+	terminate_context.uc_link = NULL; /* FIXME */
+	terminate_context.uc_stack.ss_sp = terminate_stack;
+	terminate_context.uc_stack.ss_size = sizeof(terminate_stack);
+	makecontext(&terminate_context, (void (*)(void)) terminate , 0);
+
 
 	main_tcb.tid = 0;
 	main_tcb.prio = 0; /* prioridade alta */
@@ -57,10 +70,21 @@ int initialize()
 int dispatch(TCB_t *task)
 {
 	printf("executing task %d\n", task->tid);
+	printf("apto[0]: %d\n", queue_size(apto[0]));
+	printf("apto[1]: %d\n", queue_size(apto[1]));
 	task->state = EXECUCAO;
 	executando = task;
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
+}
+
+void terminate()
+{
+	printf("terminating %d\n", executando->tid);
+	executando->state = TERMINO;
+	free(executando->context.uc_stack.ss_sp);
+	enqueue(executando, &termino);
+	setcontext(&sched_context);
 }
 
 /* a principal função da biblioteca, responsável por gerenciar as tarefas */
@@ -69,13 +93,6 @@ int scheduler()
 	int i;
 	TCB_t *task;
 
-	if (executando != NULL) {
-	/* uma tarefa só chega aqui diretamente após término */
-		printf("finishing task %d\n", executando->tid);
-		executando->state = TERMINO;
-		free(executando->context.uc_stack.ss_sp);
-		enqueue(executando, &termino);
-	}
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
 	while (i < NUM_PRIO_LVLS) {
@@ -118,7 +135,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	/* 'context' é só pra facilitar o acesso a tcb->context */
 	getcontext(&tcb->context);
 	context = &tcb->context;
-	context->uc_link = &sched_context;
+	context->uc_link = &terminate_context;
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
