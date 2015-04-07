@@ -60,9 +60,8 @@ int initialize()
 
 	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
 	*/
-	enqueue(&main_tcb, &apto[0]);
 
-	executando = NULL;
+	executando = &main_tcb;
 	return 0;
 }
 
@@ -70,8 +69,6 @@ int initialize()
 int dispatch(TCB_t *task)
 {
 	printf("executing task %d\n", task->tid);
-	printf("apto[0]: %d\n", queue_size(apto[0]));
-	printf("apto[1]: %d\n", queue_size(apto[1]));
 	task->state = EXECUCAO;
 	executando = task;
 	setcontext(&task->context);
@@ -147,8 +144,8 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	 */
 		initialize();
 	}
-	swapcontext(&main_tcb.context, &sched_context);
-//	getcontext(&main_tcb.context);
+
+	myield();
 	return tcb->tid;
 }
 
@@ -158,13 +155,9 @@ int mwait(int tid)
 {
 	int i, found = 0;
 	TCB_t *ptr;
-	/* bloqueia main thread */
-	main_tcb.state = BLOQUEADO;
-	enqueue(&main_tcb, &bloqueado);
-	executando = NULL;
 
+	/* busca por tid nas threads existentes */
 	i = 0;
-	/* busca primeiro nas filas de apto */
 	while (i < NUM_PRIO_LVLS && found == 0) {
 		if ((ptr = search_queue(tid, apto[i])) != NULL) {
 			found = 1;
@@ -180,13 +173,16 @@ int mwait(int tid)
 		return -1;
 	}
  
-	ptr->context.uc_link = &main_tcb.context;
+	/* faz thread tid chamar thread bloqueada ao seu término */
+	ptr->context.uc_link = &executando->context;
 
-	swapcontext(&main_tcb.context, &sched_context);
-	/* tid terminou */
-	main_tcb.state = APTO;
-	enqueue(&main_tcb, &apto[0]);
-	swapcontext(&main_tcb.context, &sched_context);
+	/* bloqueia thread em execução */
+	executando->state = BLOQUEADO;
+	enqueue(executando, &bloqueado);
+
+	/* e chama o escalonador */
+	swapcontext(&bloqueado->context, &sched_context);
+
 	return 0;
 }
 
