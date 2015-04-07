@@ -25,6 +25,8 @@ int initialize();
 int first_call = 0;
 void terminate();
 
+void dummy_func() {};
+
 
 /* Aloca espaço pra TCB da main thread. Inicializa o contexto do
  * escalonador e associa a função 'scheduler' à sua ativação.
@@ -171,6 +173,7 @@ int mwait(int tid)
 		tid, &ptr->context, executando->tid, &executando->context);
 	/* faz thread tid chamar thread bloqueada ao seu término */
 	ptr->context.uc_link = &executando->context;
+	makecontext(&ptr->context, (void (*)(void)) dummy_func, 0);
 	/* bloqueia thread em execução */
 	executando->state = BLOQUEADO;
 	this = executando;
