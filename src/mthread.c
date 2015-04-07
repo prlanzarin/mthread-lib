@@ -190,6 +190,6 @@ int myield(void)
 {
 	executando->state = APTO;
 	enqueue(executando, &apto[executando->tid]);
-	swapcontext(&main_tcb.context, &sched_context);
+	swapcontext(&executando->context, &sched_context);
 	return 0;
 }
