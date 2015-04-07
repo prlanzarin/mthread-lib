@@ -69,20 +69,26 @@ TCB_t *queue_remove(int tid, TCB_t *queue)
 	TCB_t *ptr;
 	ptr = queue;
 	
-	printf("BLOQTID = %d\n", ptr->tid);
 	if (ptr == NULL)
 		return ptr;
+	if(ptr->tid == tid){
+		queue = ptr->next;
+		return queue;
+	}
 
-	while(ptr != NULL){
-
+	while(ptr->next != NULL){
 		if (ptr->tid == tid) {
-			ptr->prev->next = ptr->next;
-			ptr->next = ptr->next->next;
-			return ptr;
+			queue->prev->next = ptr->next;
+			queue->next = ptr->next->next;
+			return queue;
 		}
 
 		else ptr = ptr->next;
 
 	}
-	return ptr;
+
+	ptr->prev->next = NULL;
+	queue = ptr;
+
+	return queue;
 }
