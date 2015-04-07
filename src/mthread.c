@@ -52,15 +52,6 @@ int initialize()
 	main_tcb.state = APTO;
 	main_tcb.prev = NULL;
 
-	/*
-	getcontext(&main_tcb.context);
-	main_tcb.context.uc_link = &sched_context; 
-	main_tcb.context.uc_stack.ss_sp = stack;
-	main_tcb.context.uc_stack.ss_size = sizeof(stack);
-
-	makecontext(&main_tcb.context, (void (*)(void)) scheduler, 0);
-	*/
-
 	executando = &main_tcb;
 	return 0;
 }
