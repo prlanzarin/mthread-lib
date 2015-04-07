@@ -95,14 +95,17 @@ int scheduler()
 	while (i < NUM_PRIO_LVLS) {
 		if ((task = dequeue(&apto[i])) == NULL)
 			i++;
-		else
+		else {
+			printf("dispatching from apto[%d]\n", i);
 			dispatch(task);
+		}
 	}
 	
 	if ((task = dequeue(&bloqueado)) == NULL) {
 		printf("All queues empty. Leaving. \n");
 		return 0;
 	}
+	printf("dispatching from bloqueado\n");
 	dispatch(task);
 	return 0;
 }
@@ -154,7 +157,8 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 int mwait(int tid)
 {
 	int i, found = 0;
-	TCB_t *ptr;
+	TCB_t *ptr, *this;
+
 
 	/* busca por tid nas threads existentes */
 	i = 0;
@@ -178,10 +182,16 @@ int mwait(int tid)
 
 	/* bloqueia thread em execução */
 	executando->state = BLOQUEADO;
-	enqueue(executando, &bloqueado);
+	this = executando;
+	enqueue(this, &bloqueado);
 
 	/* e chama o escalonador */
-	swapcontext(&bloqueado->context, &sched_context);
+	swapcontext(&this->context, &sched_context);
+
+	/* voltou, tira a thread do estado bloqueado */
+	this->state = APTO;
+	enqueue(this, &apto[this->tid]);
+	swapcontext(&this->context, &sched_context);
 
 	return 0;
 }
