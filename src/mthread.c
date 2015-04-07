@@ -183,7 +183,7 @@ int mwait(int tid)
 	swapcontext(&this->context, &sched_context);
 
 	/* voltou, tira a thread do estado bloqueado e da fila*/
-	printf("blocked thread to be deleted from queue = %d\n",  this->tid);
+	printf("blocked thread to be deleted from queue has tid %d\n",  this->tid);
 	if((queue_remove(this->tid, bloqueado)) == NULL)
 		printf("blocked list is empty \n!");
 

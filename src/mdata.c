@@ -64,6 +64,7 @@ TCB_t *dequeue(TCB_t **queue)
 	return ptr;
 }	
 
+/* Remove o elemento da fila que tenha id = tid */
 TCB_t *queue_remove(int tid, TCB_t *queue)
 {
 	TCB_t *ptr;
@@ -71,6 +72,7 @@ TCB_t *queue_remove(int tid, TCB_t *queue)
 	
 	if (ptr == NULL)
 		return ptr;
+
 	if(ptr->tid == tid){
 		queue = ptr->next;
 		return queue;
@@ -84,7 +86,6 @@ TCB_t *queue_remove(int tid, TCB_t *queue)
 		}
 
 		else ptr = ptr->next;
-
 	}
 
 	ptr->prev->next = NULL;
