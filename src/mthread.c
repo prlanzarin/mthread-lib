@@ -33,7 +33,6 @@ void dummy_func() {};
  */
 int initialize()
 {
-	char stack[SIGSTKSZ];
 	first_call = 1;
 	/* creates scheduler context */
 	getcontext(&sched_context);
@@ -61,8 +60,6 @@ int initialize()
 
 int dispatch(TCB_t *task)
 {
-	printf("executing task %d at %p followd by %p\n",
-		task->tid, &task->context, task->context.uc_link);
 	task->state = EXECUCAO;
 	executando = task;
 	setcontext(&task->context);
@@ -71,7 +68,6 @@ int dispatch(TCB_t *task)
 
 void terminate()
 {
-	printf("terminating %d\n", executando->tid);
 	executando->state = TERMINO;
 	free(executando->context.uc_stack.ss_sp);
 	enqueue(executando, &termino);
@@ -90,7 +86,6 @@ int scheduler()
 		if ((task = dequeue(&apto[i])) == NULL)
 			i++;
 		else {
-			printf("dispatching from apto[%d]\n", i);
 			dispatch(task);
 		}
 	}
@@ -137,7 +132,6 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	}
 
 	myield();
-	printf("post-yield apto-0 qsize: %d\n", queue_size(apto[0]));
 	return tcb->tid;
 }
 
@@ -169,8 +163,6 @@ int mwait(int tid)
 	if (ptr->state == TERMINO)
 		return -1;
 
- 	printf("thread %d at %p gets followed by thread %d at %p\n", 
-		tid, &ptr->context, executando->tid, &executando->context);
 	/* faz thread tid chamar thread bloqueada ao seu término */
 	ptr->context.uc_link = &executando->context;
 	makecontext(&ptr->context, (void (*)(void)) dummy_func, 0);
@@ -183,7 +175,6 @@ int mwait(int tid)
 	swapcontext(&this->context, &sched_context);
 
 	/* voltou, tira a thread do estado bloqueado e da fila*/
-	printf("blocked thread to be deleted from queue has tid %d\n",  this->tid);
 	if((queue_remove(this->tid, bloqueado)) == NULL)
 		printf("blocked list is empty \n!");
 

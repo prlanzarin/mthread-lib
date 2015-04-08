@@ -21,7 +21,6 @@ int queue_size(TCB_t *queue)
  */
 TCB_t *search_queue(int tid, TCB_t *queue)
 {
-	int i = 0;
 	TCB_t *ptr;
 	ptr = queue;
 	if (ptr == NULL)
