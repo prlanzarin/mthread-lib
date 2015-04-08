@@ -174,12 +174,14 @@ int mwait(int tid)
 	/* e chama o escalonador */
 	swapcontext(&this->context, &sched_context);
 
-	/* voltou, tira a thread do estado bloqueado e da fila*/
-	if((queue_remove(this->tid, bloqueado)) == NULL)
-		printf("blocked list is empty \n!");
 
 	this->state = APTO;
 	enqueue(this, &apto[this->tid]);
+
+	/* voltou, tira a thread do estado bloqueado e da fila*/
+	if((queue_remove(this->tid, &bloqueado)) == -1)
+		printf("blocked list is empty \n!");
+
 	
 	swapcontext(&this->context, &sched_context);
 
