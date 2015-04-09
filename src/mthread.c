@@ -277,7 +277,6 @@ int mlock(mmutex_t *mtx)
 		mtx->last = ptr;
 		printf("FBM: %d LBM:%d\n", mtx->first->tid, mtx->last->tid);
 		swapcontext(&executando->context, &sched_context);
-		printf("POST-SWAPCONTEXT FROM SCHEDULER! TID = %d\n", executando->tid);
 		mtx->flag = 1;
 	}
 	return 0;
@@ -289,7 +288,7 @@ int munlock(mmutex_t *mtx)
 
 	mtx->flag = UNLOCKED_MUTEX;
 	if(bloqueado_mutex == NULL)
-		printf("AAAAAAAAAAAAAAAAAAAa\n");
+		return -1;
 	if((task = dequeue(&bloqueado_mutex)) != NULL) {
 		task->state = APTO;
 		enqueue(task, &apto[task->prio]);
