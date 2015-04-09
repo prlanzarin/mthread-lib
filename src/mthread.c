@@ -269,7 +269,7 @@ int mlock(mmutex_t *mtx)
 	}
 	else {
 		/* tid code -1 é sinalização de espera por mutex */
-		block_thread(&executando, -1); 
+		block_thread(executando, -1); 
 		/* fila de threads trancados pelo mutex */
 		enqueue(executando, &bloqueado_mutex);
 		mtx->first = bloqueado_mutex;
@@ -279,7 +279,7 @@ int mlock(mmutex_t *mtx)
 
 		mtx->last = ptr;
 	}
-	return 0
+	return 0;
 }
 
 int munlock(mmutex_t *mtx)
@@ -287,7 +287,7 @@ int munlock(mmutex_t *mtx)
 	TCB_t *ptr;
 	ptr = bloqueado_mutex;
 
-	mtx->flag = UNLOCKED_FLAG;
+	mtx->flag = UNLOCKED_MUTEX;
 	
 	if((unblock_thread(mtx->last->tid)) == -1)
 		return -1;
@@ -296,8 +296,8 @@ int munlock(mmutex_t *mtx)
 		return -1;
 
 	if(ptr == NULL){
-		mtx->first == NULL;
-		mtx->last == NULL;
+		mtx->first = NULL;
+		mtx->last = NULL;
 		return 0;
 }
 	while(ptr->next != NULL)
