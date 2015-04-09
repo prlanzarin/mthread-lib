@@ -291,8 +291,8 @@ int munlock(mmutex_t *mtx)
 
 	if(ptr == NULL){
 		mtx->first = NULL;
-		mmutex_initmtx->last = NULL;
-		return 0;mmutex_init
+		mtx->last = NULL;
+		return 0;
 }
 	while(ptr->next != NULL)
 		ptr = ptr->next;
