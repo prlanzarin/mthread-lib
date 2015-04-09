@@ -9,8 +9,8 @@
 enum state_t { CRIACAO, APTO, EXECUCAO, BLOQUEADO, TERMINO };
 
 typedef struct waiting_TCB {
-	int target_tid;
-	TCB_t *tcb;
+	int target_tid; /* Id da thread a qual este tcb está esperando */
+	TCB_t *tcb; /* este tcb */
 	struct waiting_TCB *next;
 } wTCB_t;
 
@@ -65,7 +65,7 @@ int block_thread(TCB_t *tcb, int target_tid)
 	return 0;
 }
 
-/* desbloqueia thread ESPERANDO por 'tid' */
+/* desbloqueia thread ESPERANDO por 'tid' e a recoloca na fila de aptos */
 int unblock_thread(int tid)
 {
 	wTCB_t *ptr, *prev;
