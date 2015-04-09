@@ -255,19 +255,24 @@ int mmutex_init(mmutex_t *mtx)
 int mlock(mmutex_t *mtx)
 {
 	TCB_t *ptr;
-	ptr = bloqueado_mutex;
 
 	if(mtx->flag == UNLOCKED_MUTEX) {
+		printf("INTO UNLOCKED MUTEX\n!");
 		mtx->flag = 1;
 		return 0;
 	}
 	else {
+		printf("INTO LOCKED MUTEX!\n");
 		/* tid code -1 é sinalização de espera por mutex */
-		block_thread(executando, -1); 
+		block_thread(executando, -1);
+		printf("INTO LOCKED MUTEX post block thread!\n");
 		/* fila de threads trancados pelo mutex */
 		enqueue(executando, &bloqueado_mutex);
+		printf("INTO LOCKED MUTEX post enqueue thread!\n");
 		mtx->first = bloqueado_mutex;
-
+		printf("FIRST BLOCKED MUTEX: %d\n", mtx->first->tid);	
+		ptr = bloqueado_mutex;
+		
 		while(ptr->next != NULL)
 			ptr = ptr->next;
 
@@ -279,17 +284,20 @@ int mlock(mmutex_t *mtx)
 int munlock(mmutex_t *mtx)
 {
 	TCB_t *ptr;
-	ptr = bloqueado_mutex;
 
 	mtx->flag = UNLOCKED_MUTEX;
 	
-	if((unblock_thread(mtx->last->tid)) == -1)
+	if((unblock_thread(mtx->last->tid)) == -1){
+		printf("INTO MUNLOCK: UNBLOCK THREAD ERROR\n!");
 		return -1;
-
-	if((queue_remove(mtx->last->tid, &bloqueado_mutex)) == -1)
+	}
+	if((queue_remove(mtx->last->tid, &bloqueado_mutex)) == -1){
+		printf("INTO MUNLOCK: QUEUE_REMOVE ERROR\n!");
 		return -1;
-
+}
+	ptr = bloqueado_mutex;
 	if(ptr == NULL){
+		printf("INTO MUNLOCK: NULL BLOCKED_MTX LIST\n!");
 		mtx->first = NULL;
 		mtx->last = NULL;
 		return 0;
