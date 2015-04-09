@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ucontext.h>
@@ -7,9 +8,15 @@
 #define MAX_THREADS 64
 enum state_t { CRIACAO, APTO, EXECUCAO, BLOQUEADO, TERMINO };
 
+typedef struct waiting_TCB {
+	int target_tid;
+	TCB_t *tcb;
+	struct waiting_TCB *next;
+} wTCB_t;
+
 TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
-TCB_t *bloqueado = NULL;
+wTCB_t *bloqueado = NULL;
 TCB_t main_tcb;
 TCB_t *termino = NULL;
 int tids = 1;
@@ -24,6 +31,78 @@ char terminate_stack[SIGSTKSZ];
 int initialize();
 int first_call = 0;
 void terminate();
+
+/* Bloqueia thread para aguardar por 'target_tid'. Se já há uma thread
+ * aguardando por 'tid', retorna -1. Retorna 0 em caso de sucesso.
+ */
+int block_thread(TCB_t *tcb, int target_tid)
+{
+	wTCB_t *w_tcb, *ptr;
+
+	ptr = bloqueado;
+	/* verifica se há alguma thread aguardando por 'target_tid' */
+	while (ptr != NULL) {
+		if (ptr->target_tid == target_tid)
+			return -1; /* já há alguém aguardando */
+		ptr = ptr->next;
+	}
+
+	/* Bloqueia a thread */
+	tcb->state = BLOQUEADO;
+	w_tcb = malloc(sizeof(wTCB_t));
+	w_tcb->target_tid = target_tid;
+	w_tcb->tcb = tcb;
+
+	if ((ptr = bloqueado) == NULL) {
+	/* primeira tcb na lista de bloqueados */
+		w_tcb->next = NULL;
+		bloqueado = w_tcb;
+		return 0;
+	}
+	/* adiciona ao início da lista */
+	w_tcb->next = bloqueado;
+	bloqueado = w_tcb;
+	return 0;
+}
+
+/* desbloqueia thread ESPERANDO por 'tid' */
+int unblock_thread(int tid)
+{
+	wTCB_t *ptr, *prev;
+	ucontext_t *context;
+
+	ptr = bloqueado;
+	if (ptr == NULL)
+		return 0; /* não há threads bloqueadas */
+
+	if (ptr->target_tid == tid) {
+		ptr->tcb->state = APTO;
+		enqueue(ptr->tcb, &apto[ptr->tcb->prio]);
+		free(ptr);
+		bloqueado = NULL;
+		return 0;
+	}
+
+	prev = ptr;
+	ptr = ptr->next;
+	while (ptr != NULL) {
+		if (ptr->target_tid == tid) {
+			/* achou. Desbloqueia e chama o contexto da thread
+			 * bloquada
+			 */
+			ptr->tcb->state = APTO;
+			enqueue(ptr->tcb, &apto[ptr->tcb->prio]);
+			prev->next = ptr->next; /* pode ser NULL */
+			context = &ptr->tcb->context;
+			free(ptr);
+			setcontext(context);
+		} else {
+			prev = ptr;
+			ptr = ptr->next;
+		}
+	}
+	return -1; /* nenhuma thread estava aguardando por 'tid' */
+}
 
 void dummy_func() {};
 
@@ -71,6 +150,7 @@ void terminate()
 	executando->state = TERMINO;
 	free(executando->context.uc_stack.ss_sp);
 	enqueue(executando, &termino);
+	unblock_thread(executando->tid);
 	setcontext(&sched_context);
 }
 
@@ -139,52 +219,17 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 
 int mwait(int tid)
 {
-	int i, found = 0;
-	TCB_t *ptr, *this;
+	if (tid >= tids)
+		return -1; /* thread ainda não foi criada */
+	if (search_queue(tid, termino) != NULL)
+		return -1; /* já terminou, não precisa esperar */
 
-
-	/* busca por tid nas threads existentes */
-	i = 0;
-	while (i < NUM_PRIO_LVLS && found == 0) {
-		if ((ptr = search_queue(tid, apto[i])) != NULL) {
-			found = 1;
-		}
-		i++;
-	}
-	if (found == 0)
-		ptr = search_queue(tid, bloqueado);
-	if (found == 0)
-		ptr = search_queue(tid, termino);
-	if (ptr == NULL) {
-		printf("tid não encontrado\n");
-		return -1;
-	}
-	/* processo 'tid' já terminou, não tem porque esperar */
-	if (ptr->state == TERMINO)
-		return -1;
-
-	/* faz thread tid chamar thread bloqueada ao seu término */
-	ptr->context.uc_link = &executando->context;
-	makecontext(&ptr->context, (void (*)(void)) dummy_func, 0);
-	/* bloqueia thread em execução */
-	executando->state = BLOQUEADO;
-	this = executando;
-	enqueue(this, &bloqueado);
+	block_thread(executando, tid);
 
 	/* e chama o escalonador */
-	swapcontext(&this->context, &sched_context);
+	swapcontext(&executando->context, &sched_context);
 
-
-	this->state = APTO;
-	enqueue(this, &apto[this->tid]);
-
-	/* voltou, tira a thread do estado bloqueado e da fila*/
-	if((queue_remove(this->tid, &bloqueado)) == -1)
-		printf("blocked list is empty \n!");
-
-	
-	swapcontext(&this->context, &sched_context);
-
+	/* tudo certo, thread desbloqueada */
 	return 0;
 }
 
