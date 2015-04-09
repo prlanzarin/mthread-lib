@@ -8,8 +8,6 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "../include/mthread.h"
 
 void* func0(void *arg) {
@@ -24,7 +22,7 @@ void* func1(void *arg) {
 int main(int argc, char *argv[]) {
 
     int	id0, id1;
-	int i = 3;
+	int i;
 
     id0 = mcreate(0, func0, (void *)&i);
     id1 = mcreate(1, func1, (void *)&i);
