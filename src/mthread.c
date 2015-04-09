@@ -246,12 +246,6 @@ int myield(void)
 
 int mmutex_init(mmutex_t *mtx)
 {
-	/* não pôde ser alocado */
-	if((mtx = malloc(sizeof(mmutex_t))) == NULL){
-		printf("MALLOCERR MTX\n");
-		return -1;
-	}
-
 	mtx->flag = UNLOCKED_MUTEX;
 	mtx->first = NULL;
 	mtx->last = NULL;
@@ -297,8 +291,8 @@ int munlock(mmutex_t *mtx)
 
 	if(ptr == NULL){
 		mtx->first = NULL;
-		mtx->last = NULL;
-		return 0;
+		mmutex_initmtx->last = NULL;
+		return 0;mmutex_init
 }
 	while(ptr->next != NULL)
 		ptr = ptr->next;
