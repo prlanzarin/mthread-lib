@@ -6,6 +6,8 @@
 #include "../include/mthread.h"
 #define NUM_PRIO_LVLS 3
 #define MAX_THREADS 64
+#define UNLOCKED_MUTEX 0
+
 enum state_t { CRIACAO, APTO, EXECUCAO, BLOQUEADO, TERMINO };
 
 typedef struct waiting_TCB {
@@ -17,6 +19,7 @@ typedef struct waiting_TCB {
 TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
 wTCB_t *bloqueado = NULL;
+TCB_t *bloqueado_mutex = NULL;
 TCB_t main_tcb;
 TCB_t *termino = NULL;
 int tids = 1;
@@ -42,7 +45,7 @@ int block_thread(TCB_t *tcb, int target_tid)
 	ptr = bloqueado;
 	/* verifica se há alguma thread aguardando por 'target_tid' */
 	while (ptr != NULL) {
-		if (ptr->target_tid == target_tid)
+		if (ptr->target_tid == target_tid && target_tid != -1)
 			return -1; /* já há alguém aguardando */
 		ptr = ptr->next;
 	}
@@ -239,4 +242,69 @@ int myield(void)
 	enqueue(executando, &apto[executando->prio]);
 	swapcontext(&executando->context, &sched_context);
 	return 0;
+}
+
+int mmutex_init(mmutex_t *mtx)
+{
+	/* não pôde ser alocado */
+	if((mtx = malloc(sizeof(mmutex_t))) == NULL){
+		printf("MALLOCERR MTX\n");
+		return -1;
+	}
+
+	mtx->flag = UNLOCKED_MUTEX;
+	mtx->first = NULL;
+	mtx->last = NULL;
+	return 0;
+}
+
+int mlock(mmutex_t *mtx)
+{
+	TCB_t *ptr;
+	ptr = bloqueado_mutex;
+
+	if(mtx->flag == UNLOCKED_MUTEX) {
+		mtx->flag = 1;
+		return 0;
+	}
+	else {
+		/* tid code -1 é sinalização de espera por mutex */
+		block_thread(&executando, -1); 
+		/* fila de threads trancados pelo mutex */
+		enqueue(executando, &bloqueado_mutex);
+		mtx->first = bloqueado_mutex;
+
+		while(ptr->next != NULL)
+			ptr = ptr->next;
+
+		mtx->last = ptr;
+	}
+	return 0
+}
+
+int munlock(mmutex_t *mtx)
+{
+	TCB_t *ptr;
+	ptr = bloqueado_mutex;
+
+	mtx->flag = UNLOCKED_FLAG;
+	
+	if((unblock_thread(mtx->last->tid)) == -1)
+		return -1;
+
+	if((queue_remove(mtx->last->tid, &bloqueado_mutex)) == -1)
+		return -1;
+
+	if(ptr == NULL){
+		mtx->first == NULL;
+		mtx->last == NULL;
+		return 0;
+}
+	while(ptr->next != NULL)
+		ptr = ptr->next;
+
+	mtx->last = ptr;
+
+	return 0;
+	
 }
