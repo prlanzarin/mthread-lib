@@ -45,7 +45,7 @@ int block_thread(TCB_t *tcb, int target_tid)
 	ptr = bloqueado;
 	/* verifica se há alguma thread aguardando por 'target_tid' */
 	while (ptr != NULL) {
-		if (ptr->target_tid == target_tid && target_tid != -1)
+		if (ptr->target_tid == target_tid)
 			return -1; /* já há alguém aguardando */
 		ptr = ptr->next;
 	}
@@ -257,56 +257,61 @@ int mlock(mmutex_t *mtx)
 	TCB_t *ptr;
 
 	if(mtx->flag == UNLOCKED_MUTEX) {
-		printf("INTO UNLOCKED MUTEX\n!");
+		printf(">>>INTO UNLOCKED MUTEX<<<\n");
 		mtx->flag = 1;
 		return 0;
 	}
 	else {
-		printf("INTO LOCKED MUTEX!\n");
-		/* tid code -1 é sinalização de espera por mutex */
-		block_thread(executando, -1);
-		printf("INTO LOCKED MUTEX post block thread!\n");
+		printf("<<<INTO LOCKED MUTEX>>>\n");
 		/* fila de threads trancados pelo mutex */
+		executando->state = BLOQUEADO;   
 		enqueue(executando, &bloqueado_mutex);
-		printf("INTO LOCKED MUTEX post enqueue thread!\n");
+		
 		mtx->first = bloqueado_mutex;
-		printf("FIRST BLOCKED MUTEX: %d\n", mtx->first->tid);	
+
 		ptr = bloqueado_mutex;
 		
 		while(ptr->next != NULL)
 			ptr = ptr->next;
 
 		mtx->last = ptr;
+		printf("FBM: %d LBM:%d\n", mtx->first->tid, mtx->last->tid);
+		swapcontext(&executando->context, &sched_context);
+		printf("POST-SWAPCONTEXT FROM SCHEDULER! TID = %d\n", executando->tid);
+		mtx->flag = 1;
 	}
 	return 0;
 }
 
 int munlock(mmutex_t *mtx)
 {
-	TCB_t *ptr;
+	TCB_t *ptr, *task;
 
 	mtx->flag = UNLOCKED_MUTEX;
-	
-	if((unblock_thread(mtx->last->tid)) == -1){
-		printf("INTO MUNLOCK: UNBLOCK THREAD ERROR\n!");
+	if(bloqueado_mutex == NULL)
+		printf("AAAAAAAAAAAAAAAAAAAa\n");
+	if((task = dequeue(&bloqueado_mutex)) != NULL) {
+		task->state = APTO;
+		enqueue(task, &apto[task->prio]);
+	}
+	else {
+		printf("INTO MUNLOCK: THREAD NOT FOUND ON DEQUEUE\n!");
 		return -1;
 	}
-	if((queue_remove(mtx->last->tid, &bloqueado_mutex)) == -1){
-		printf("INTO MUNLOCK: QUEUE_REMOVE ERROR\n!");
-		return -1;
-}
+
 	ptr = bloqueado_mutex;
+
 	if(ptr == NULL){
 		printf("INTO MUNLOCK: NULL BLOCKED_MTX LIST\n!");
 		mtx->first = NULL;
 		mtx->last = NULL;
 		return 0;
-}
+	}
+
 	while(ptr->next != NULL)
 		ptr = ptr->next;
 
 	mtx->last = ptr;
 
 	return 0;
-	
 }
