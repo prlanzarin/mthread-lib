@@ -61,4 +61,4 @@ TCB_t *dequeue(TCB_t **queue)
 
 	prev->next = NULL;
 	return ptr;
-}	
+}

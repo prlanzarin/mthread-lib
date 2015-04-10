@@ -19,7 +19,6 @@ typedef struct waiting_TCB {
 TCB_t *apto[NUM_PRIO_LVLS] = {NULL, NULL, NULL};
 TCB_t *executando = NULL;
 wTCB_t *bloqueado = NULL;
-TCB_t *bloqueado_mutex = NULL;
 TCB_t main_tcb;
 TCB_t *termino = NULL;
 int tids = 1;
@@ -265,11 +264,10 @@ int mlock(mmutex_t *mtx)
 		printf("<<<INTO LOCKED MUTEX>>>\n");
 		/* fila de threads trancados pelo mutex */
 		executando->state = BLOQUEADO;   
-		enqueue(executando, &bloqueado_mutex);
+		enqueue(executando, &mtx->first);
 		
-		mtx->first = bloqueado_mutex;
 
-		ptr = bloqueado_mutex;
+		ptr = mtx->first;
 		
 		while(ptr->next != NULL)
 			ptr = ptr->next;
@@ -287,9 +285,8 @@ int munlock(mmutex_t *mtx)
 	TCB_t *ptr, *task;
 
 	mtx->flag = UNLOCKED_MUTEX;
-	if(bloqueado_mutex == NULL)
-		return -1;
-	if((task = dequeue(&bloqueado_mutex)) != NULL) {
+
+	if((task = dequeue(&mtx->first)) != NULL) {
 		task->state = APTO;
 		enqueue(task, &apto[task->prio]);
 	}
@@ -298,11 +295,10 @@ int munlock(mmutex_t *mtx)
 		return -1;
 	}
 
-	ptr = bloqueado_mutex;
+	ptr = mtx->first;
 
 	if(ptr == NULL){
 		printf("INTO MUNLOCK: NULL BLOCKED_MTX LIST\n!");
-		mtx->first = NULL;
 		mtx->last = NULL;
 		return 0;
 	}
