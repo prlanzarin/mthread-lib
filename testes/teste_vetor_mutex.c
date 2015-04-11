@@ -7,6 +7,7 @@
 #include	"../include/mthread.h"
 #include	<stdio.h>
 #include	<stdlib.h>
+#include	<unistd.h>
 
 #define		MAX_SIZE	250
 #define		MAX_THR		10
@@ -18,19 +19,15 @@ mmutex_t mtx;
 
 void *func(void *arg){
 	mlock(&mtx);
-	printf("START: LOCKED AREA\n");
 	while ( inc < MAX_SIZE ) {
 		vetor[inc] = (int)arg;
 		inc++;
-		if ( (inc % 20) == 0 ){
-			printf("TASK YIELDED ON LOCK\n");
+		if ( (inc % 20) == 0 )
 			myield(); 
-		}
 		else
 			continue; 
 	}
 	munlock(&mtx);
-	printf("END: LOCKED AREA. MUTEX = %d\n", mtx.flag);
 
    return (NULL);
 }
@@ -48,7 +45,7 @@ int main(int argc, char *argv[]) {
        }
      }
 
-    	for (i = 0; i < MAX_THR; i++) 
+	for (i = 0; i < MAX_THR; i++) 
 		mwait(pid[i]);
 
 	for (i = 0; i < MAX_SIZE; i++) {    

@@ -143,7 +143,6 @@ int dispatch(TCB_t *task)
 {
 	task->state = EXECUCAO;
 	executando = task;
-	printf("RUNNING THREAD HAS TID %d\n", executando->tid);
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
 }
@@ -204,7 +203,6 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
-	printf("THREAD %d CREATED\n", tcb->tid);
 	if (first_call == 0) {
 	/* primeira função de mthread chamada. */
 	/* inicializa ao fim para que a main thread esteja associada
@@ -242,6 +240,7 @@ int myield(void)
 	return 0;
 }
 
+/* inicializa o mutex */
 int mmutex_init(mmutex_t *mtx)
 {
 	mtx->flag = UNLOCKED_MUTEX;
@@ -250,21 +249,24 @@ int mmutex_init(mmutex_t *mtx)
 	return 0;
 }
 
+/* se o mutex estiver destrancado, o tranca e continua a execução da thread
+ * que o chamou. Caso contrário, remove a thread ativa da execução e a bloqueia
+ * para que espere pelo desbloqueio do mutex
+ */
 int mlock(mmutex_t *mtx)
 {
 	TCB_t *ptr;
-
+	/* mutex destrancado */
 	if(mtx->flag == UNLOCKED_MUTEX) {
-		printf(">>>TASK %d IN UNLOCKED MUTEX\n", executando->tid);
+		//printf(">>>TASK %d IN UNLOCKED MUTEX\n", executando->tid);
 		mtx->flag = 1;
 		return 0;
 	}
-	else {
-		printf("<<<TASK %d INTO LOCKED MUTEX\n", executando->tid);
+	else { /*mutex trancado*/
+		//printf("<<<TASK %d INTO LOCKED MUTEX\n", executando->tid);
 		/* fila de threads trancados pelo mutex */
 		executando->state = BLOQUEADO;
 		enqueue(executando, &mtx->first);
-		//dequeue(executando)
 
 		ptr = mtx->first;
 		
@@ -278,24 +280,28 @@ int mlock(mmutex_t *mtx)
 	return 0;
 }
 
+/* desbloqueia o mutex repassado. Se tiver threads esperando para serem
+ * executadas, retira a última da lista de bloqueados e a bota em apto 
+ * para execução.
+ */
 int munlock(mmutex_t *mtx)
 {
 	TCB_t *ptr, *task;
 
 	mtx->flag = UNLOCKED_MUTEX;
-	/* threads bloqueadas = 0 */
+	/* nenhuma thread bloqueada */
 	if((task = dequeue(&mtx->first)) == NULL){
-		printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n!");
+		//printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n!");
 		mtx->last = NULL;
 		return 0;
 	}
 	else {
 		task->state = APTO;
 		enqueue(task, &apto[task->prio]);
-		printf("TASK %d: SET TO APTO\n", task->tid);
+		//printf("TASK %d: SET TO APTO\n", task->tid);
 		/* última thread a ser desbloqueada */
 		if(mtx->first == NULL) {
-			printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n");
+			//printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n");
 			mtx->last = NULL;
 			return 0;
 		}
