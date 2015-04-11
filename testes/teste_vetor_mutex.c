@@ -22,8 +22,10 @@ void *func(void *arg){
 	while ( inc < MAX_SIZE ) {
 		vetor[inc] = (int)arg;
 		inc++;
-		if ( (inc % 20) == 0 )
+		if ( (inc % 20) == 0 ){
+			printf("TASK YIELDED ON LOCK\n");
 			myield(); 
+		}
 		else
 			continue; 
 	}
@@ -38,7 +40,6 @@ int main(int argc, char *argv[]) {
     int i, pid[MAX_THR];
 
 	mmutex_init(&mtx);
-	printf("MUTEX FLAG INIT VALUE: %d\n", mtx.flag);
 	for (i = 0; i < MAX_THR; i++) {
         	pid[i] = mcreate(1, func, (void *)('A'+i));
        		if ( pid[i] == -1) {

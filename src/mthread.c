@@ -143,6 +143,7 @@ int dispatch(TCB_t *task)
 {
 	task->state = EXECUCAO;
 	executando = task;
+	printf("RUNNING THREAD HAS TID %d\n", executando->tid);
 	setcontext(&task->context);
 	return -1; /* algo deu errado */
 }
@@ -161,7 +162,6 @@ int scheduler()
 {
 	int i;
 	TCB_t *task;
-
 	i = 0;
 	/* checa fila de aptos em ordem (alta -> baixa) */
 	while (i < NUM_PRIO_LVLS) {
@@ -204,7 +204,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
-
+	printf("THREAD %d CREATED\n", tcb->tid);
 	if (first_call == 0) {
 	/* primeira função de mthread chamada. */
 	/* inicializa ao fim para que a main thread esteja associada
@@ -212,7 +212,6 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	 */
 		initialize();
 	}
-
 	myield();
 	return tcb->tid;
 }
@@ -256,16 +255,16 @@ int mlock(mmutex_t *mtx)
 	TCB_t *ptr;
 
 	if(mtx->flag == UNLOCKED_MUTEX) {
-		printf(">>>INTO UNLOCKED MUTEX<<<\n");
+		printf(">>>TASK %d IN UNLOCKED MUTEX\n", executando->tid);
 		mtx->flag = 1;
 		return 0;
 	}
 	else {
-		printf("<<<INTO LOCKED MUTEX>>>\n");
+		printf("<<<TASK %d INTO LOCKED MUTEX\n", executando->tid);
 		/* fila de threads trancados pelo mutex */
-		executando->state = BLOQUEADO;   
+		executando->state = BLOQUEADO;
 		enqueue(executando, &mtx->first);
-		
+		//dequeue(executando)
 
 		ptr = mtx->first;
 		
@@ -273,9 +272,8 @@ int mlock(mmutex_t *mtx)
 			ptr = ptr->next;
 
 		mtx->last = ptr;
-		printf("FBM: %d LBM:%d\n", mtx->first->tid, mtx->last->tid);
 		swapcontext(&executando->context, &sched_context);
-		mtx->flag = 1;
+		mtx->flag = 1; /*processo vai executar: tranca mutex*/
 	}
 	return 0;
 }
@@ -285,23 +283,25 @@ int munlock(mmutex_t *mtx)
 	TCB_t *ptr, *task;
 
 	mtx->flag = UNLOCKED_MUTEX;
-
-	if((task = dequeue(&mtx->first)) != NULL) {
-		task->state = APTO;
-		enqueue(task, &apto[task->prio]);
-	}
-	else {
-		printf("INTO MUNLOCK: THREAD NOT FOUND ON DEQUEUE\n!");
-		return -1;
-	}
-
-	ptr = mtx->first;
-
-	if(ptr == NULL){
-		printf("INTO MUNLOCK: NULL BLOCKED_MTX LIST\n!");
+	/* threads bloqueadas = 0 */
+	if((task = dequeue(&mtx->first)) == NULL){
+		printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n!");
 		mtx->last = NULL;
 		return 0;
 	}
+	else {
+		task->state = APTO;
+		enqueue(task, &apto[task->prio]);
+		printf("TASK %d: SET TO APTO\n", task->tid);
+		/* última thread a ser desbloqueada */
+		if(mtx->first == NULL) {
+			printf("TASK IN MUNLOCK: NO THREADS BLOCKED\n");
+			mtx->last = NULL;
+			return 0;
+		}
+	}
+	/*ainda há threads a serem desbloqueadas */
+	ptr = mtx->first;
 
 	while(ptr->next != NULL)
 		ptr = ptr->next;
