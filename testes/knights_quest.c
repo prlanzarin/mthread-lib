@@ -15,16 +15,13 @@ void insert_move(KnightPos *pos, KnightPos **queue)
 	*queue = pos;
 }
 
-KnightPos *moveKnight(void *arg, void *arg2)
+KnightPos *moveKnight(int c, int r)
 {
-	int c, r, c1, r1, r2;
+	int c1, r1, r2;
 	int v, h;
-	KnightPos *next_moves, *new_move;
+	KnightPos *next_moves  = NULL, *new_move;
 
-	c = *((int *) arg);
-	r = *((int *) arg2);
-
-	for(v = 2; v >= -1; v--) {
+	for(v = 2; v >= -2; v--) {
 		switch(v) {
 			case 2:
 				c1 = c+v;
@@ -50,7 +47,7 @@ KnightPos *moveKnight(void *arg, void *arg2)
 			default: break;
 		}
 
-		if(c1 <= 8 && c1 >= 1){
+ 		if(c1 <= 8 && c1 >= 1 && v != 0){
 			if(r1 <= 8 && r1 >= 1) {
 				new_move = malloc(sizeof(KnightPos));
 				new_move->c = c1;
@@ -73,8 +70,14 @@ KnightPos *moveKnight(void *arg, void *arg2)
 int main()
 {
 	int c, r;
-	KnightPos *moves;
-	moves = moveKnight(6,1);
+	KnightPos *moves, *ptr;
+	moves = moveKnight(8,1);
+	ptr = moves;
+	while(ptr != NULL) {
+		printf("(%d, %d), ", ptr->c, ptr->r);
+		ptr = ptr->next;
+	}
+	printf("\n");
 	
 	return 0;
 }
