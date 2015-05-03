@@ -1,7 +1,8 @@
 #include "../include/mthread.h"
 #include <stdio.h>
 #include <stdlib.h>
-#define BOARD_SIZE 8
+#define MAX_BSIZE 8
+#define MIN_BSIZE 1
 
 typedef struct KnightPosition {
 	int c;
@@ -47,14 +48,14 @@ KnightPos *moveKnight(int c, int r)
 			default: break;
 		}
 
- 		if(c1 <= 8 && c1 >= 1 && v != 0){
-			if(r1 <= 8 && r1 >= 1) {
+ 		if(c1 <= MAX_BSIZE && c1 >= MIN_BSIZE && v != 0){
+			if(r1 <= MAX_BSIZE && r1 >= MIN_BSIZE) {
 				new_move = malloc(sizeof(KnightPos));
 				new_move->c = c1;
 				new_move->r = r1;
 				insert_move(new_move, &next_moves);
 			}
-			if(r2 <= 8 && r2 >= 1) {
+			if(r2 <= MAX_BSIZE && r2 >= MIN_BSIZE) {
 				new_move = malloc(sizeof(KnightPos));
 				new_move->c = c1;
 				new_move->r = r2;
@@ -65,6 +66,17 @@ KnightPos *moveKnight(int c, int r)
 	}
 				
 	return next_moves;
+}
+
+KnightPos *in3(void *arg)
+{
+	int tid;
+	KnightPos *moves_in3, ptr;
+	moves_in3 = moveKnight(c, r);
+	ptr = moves_in3;
+	while(ptr != NULL) {
+		mcreate(2, (void (*)(void *)) in3, (void (*)(void *))
+	}
 }
 
 int main()
