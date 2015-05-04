@@ -186,7 +186,6 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 		return -1;
 	}
 
-
 	/* Cria nova TCB e insere na fila de prioridades */
 	tcb = malloc(sizeof(TCB_t));
 	tcb->tid = tids++;
@@ -203,13 +202,13 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 	context->uc_stack.ss_sp = stack;
 	context->uc_stack.ss_size = sizeof(char) * SIGSTKSZ;
 	makecontext(context, (void (*)(void)) start, 1, arg);
-	if (first_call == 0) {
 	/* primeira função de mthread chamada. */
 	/* inicializa ao fim para que a main thread esteja associada
 	 * ao fluxo principal do programa
 	 */
+	if (first_call == 0)
 		initialize();
-	}
+
 	return tcb->tid;
 }
 
@@ -233,6 +232,8 @@ int mwait(int tid)
 
 int myield(void)
 {
+	if (first_call == 0)
+		initialize();
 	executando->state = APTO;
 	enqueue(executando, &apto[executando->prio]);
 	swapcontext(&executando->context, &sched_context);
@@ -256,6 +257,12 @@ int mmutex_init(mmutex_t *mtx)
 int mlock(mmutex_t *mtx)
 {
 	TCB_t *ptr;
+	/* se a main ainda não existe, a cria */
+	if (first_call == 0)
+		initialize();
+	/* mutex inválido */
+	if(!mtx)
+		return -1;
 	/* mutex destrancado */
 	if(mtx->flag == UNLOCKED_MUTEX) {
 		mtx->flag = 1;
@@ -281,18 +288,19 @@ int mlock(mmutex_t *mtx)
 /* desbloqueia o mutex repassado. Se tiver threads esperando para serem
  * executadas, retira a última da lista de bloqueados e a bota em apto 
  * para execução.
- * TODO: tratamento de erro
  */
 int munlock(mmutex_t *mtx)
 {
 	TCB_t *ptr, *task;
 
+	/* mutex inválid */
+	if(!mtx)
+		return -1;
+	
 	mtx->flag = UNLOCKED_MUTEX;
 	/* nenhuma thread bloqueada */
-	if((task = dequeue(&mtx->first)) == NULL){
-		mtx->last = NULL;
-		return 0;
-	}
+	if((task = dequeue(&mtx->first)) == NULL)
+		return -1;
 	else {
 		task->state = APTO;
 		enqueue(task, &apto[task->prio]);
