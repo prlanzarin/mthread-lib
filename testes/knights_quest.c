@@ -16,6 +16,7 @@ typedef struct KnightPositionList {
 } KnightPosEl;
 
 KnightPosEl *next_moves = NULL;
+int calls = 0;
 
 /* lista de posições -> inserção */
 void insert_move(KnightPosEl *pos, KnightPosEl **queue)
@@ -87,10 +88,20 @@ KnightPosEl *moveKnight(void *arg)
 				
 	return next_moves;
 }
+
+KnightPosEl *in3(void *arg){
+	KnightPosEl *ptr;
+	KnightPos *pos_ptr;
+	
+	pos_ptr = (KnightPos *)arg;
+}
 /*
 bool canReachIn3(KnightPos org, KnightPos dst)
 {
 	int tid;
+	KnightPos *first_moves;
+	first_moves = moveKnight((void*) &org));
+	calls++;
 	ptr = next_moves;
 	while(ptr != NULL) {
 		tid[i] = mcreate(2, (void *) in3, (void *));
@@ -110,5 +121,5 @@ int main()
 	}
 	printf("\n");
 	
-	return 0;
+	exit(0);
 }
