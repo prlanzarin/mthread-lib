@@ -19,6 +19,9 @@ teste_vetor_mutex: teste_vetor_mutex.c $(LIB_DIR)/libmthread.a
 mandel_atv_mutex: mandel_atv_mutex.c $(LIB_DIR)/libmthread.a
 	$(CC) -o mandel_atv_mutex mandel_atv_mutex.c -L$(LIB_DIR) -lmthread -Wall
 
+rc_adder: rc_adder.c $(LIB_DIR)/libmthread.a
+	$(CC) -o rc_adder rc_adder.c -L$(LIB_DIR) -lmthread -Wall
+
 clean:
-	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex *~
+	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder*~
 
