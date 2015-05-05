@@ -25,6 +25,9 @@ rc_adder: rc_adder.c $(LIB_DIR)/libmthread.a
 mlock: mlock.c $(LIB_DIR)/libmthread.a
 	$(CC) -o mlock mlock.c -L$(LIB_DIR) -lmthread -Wall
 
+munlock: munlock.c $(LIB_DIR)/libmthread.a
+	$(CC) -o munlock munlock.c -L$(LIB_DIR) -lmthread -Wall
+
 clean:
-	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock *~
+	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock *~
 
