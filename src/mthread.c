@@ -106,9 +106,6 @@ int unblock_thread(int tid)
 	return -1; /* nenhuma thread estava aguardando por 'tid' */
 }
 
-void dummy_func() {};
-
-
 /* Aloca espaço pra TCB da main thread. Inicializa o contexto do
  * escalonador e associa a função 'scheduler' à sua ativação.
  */
@@ -252,7 +249,6 @@ int mmutex_init(mmutex_t *mtx)
 /* se o mutex estiver destrancado, o tranca e continua a execução da thread
  * que o chamou. Caso contrário, remove a thread ativa da execução e a bloqueia
  * para que espere pelo desbloqueio do mutex
- * TODO: tratamento de erro
  */
 int mlock(mmutex_t *mtx)
 {
@@ -293,14 +289,18 @@ int munlock(mmutex_t *mtx)
 {
 	TCB_t *ptr, *task;
 
-	/* mutex inválid */
+	/* mutex inválido */
 	if(!mtx)
 		return -1;
-	
+	/* mutex já estava liberado */
+	if(mtx->flag == UNLOCKED_MUTEX){
+		return 0;
+	}
+
 	mtx->flag = UNLOCKED_MUTEX;
 	/* nenhuma thread bloqueada */
 	if((task = dequeue(&mtx->first)) == NULL)
-		return -1;
+		return 0;
 	else {
 		task->state = APTO;
 		enqueue(task, &apto[task->prio]);
