@@ -213,7 +213,7 @@ int mcreate(int prio, void *(*start)(void*), void *arg)
 
 int mwait(int tid)
 {
-	if (tid >= tids)
+	if (tid >= tids || tid < 0)
 		return -1; /* thread ainda não foi criada */
 	if (search_queue(tid, termino) != NULL)
 		return -1; /* já terminou, não precisa esperar */
