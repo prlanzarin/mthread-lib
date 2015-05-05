@@ -61,6 +61,11 @@ int main() {
 		if((i + 1) < MAX_BITS)
 			sum[i+1]->cin = sum[i]->cout;
 	}
+	/* teste de mwait para thread de tid inválido */
+	if(mwait(-1) == -1){
+		printf("A thread a qual quer-se esperar por é inválida!\n");
+		printf("Nossa biblioteca não permite isso!\n");
+	}
 	/* impressão do resultado */
 	printf("Resultado: ");
 	for(i = MAX_BITS - 1; i >= 0 ; i--)

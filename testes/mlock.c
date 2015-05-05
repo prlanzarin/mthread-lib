@@ -41,7 +41,7 @@ void *locker_room(void *arg){
 	munlock(&mutex);
 	printf("Thread %d SAI da seção crítica\n", tid[tindex]);
 	free(arg);
-	return;
+	return NULL;
 }
 
 
