@@ -9,36 +9,36 @@ mmutex_t mutex;
 
 void locker_room(void *arg){
 	int i = 0;
-	int thid = (int *)arg;
+	int tindex = *((int *) arg);
 
-	printf("Thread %d está executando\n", thid);
+	printf("Thread %d está executando\n", tid[tindex]);
 	mlock(&mutex);
 
-	printf("Thread %d entra na seção crítica e vai imprimir seu tid 10 vezes\n", thid);
+	printf("Thread %d entra na seção crítica e vai imprimir seu tid 10 vezes\n", tid[tindex]);
 	for(i = 0; i<10; i++)
-		printf("%d", thid);
+		printf("%d", tid[tindex]);
 	printf("\n");
-	printf("Thread %d vai usar yield dentro do lock\n", thid);
+	printf("Thread %d vai usar yield dentro do lock\n", tid[tindex]);
 	myield();
-	printf("Thread %d volta na seção crítica e vai imprimir seu tid 10 vezes\n", thid);
+	printf("Thread %d volta na seção crítica e vai imprimir seu tid 10 vezes\n", tid[tindex]);
 	for(i = 0; i<10; i++)
-		printf("%d", thid);
+		printf("%d", tid[tindex]);
 	printf("\n");
 	munlock(&mutex);
-	printf("Thread %d saindo da seção crítica\n", thid);
+	printf("Thread %d saindo da seção crítica\n", tid[tindex]);
 }
 
 
 int main() {
 	int i = 0;
-	
+
 	if(mmutex_init(&mutex) == 1){
 		printf("Erro na inicialização do mutex.\n");
 		exit(0);
 }
 	for(i = 0; i < MAX_THREADS; i++) {
-		tid[0] = mcreate(1, (void *) locker_room, (void *) tid[0]);
-		printf("Thread %d criada\n", tid[0]);
+		tid[i] = mcreate(1, (void *) locker_room, (void *) &i);
+		printf("Thread %d criada\n", tid[i]);
 	}
 
 	for(i = 0; i < MAX_THREADS; i++)
