@@ -28,6 +28,9 @@ mlock: mlock.c $(LIB_DIR)/libmthread.a
 munlock: munlock.c $(LIB_DIR)/libmthread.a
 	$(CC) -o munlock munlock.c -L$(LIB_DIR) -lmthread -Wall
 
+myield_test: myield_test.c $(LIB_DIR)/libmthread.a
+	$(CC) -o myield_test myield_test.c -L$(LIB_DIR) -lmthread -Wall
+
 clean:
-	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock *~
+	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock myield_test *~
 
