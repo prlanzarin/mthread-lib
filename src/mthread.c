@@ -241,6 +241,8 @@ int myield(void)
 /* inicializa o mutex */
 int mmutex_init(mmutex_t *mtx)
 {
+	if (mtx == NULL) /* estrutura deve ser alocada pelo usuário */
+		return -1;
 	mtx->flag = LIVRE;
 	mtx->first = NULL;
 	mtx->last = NULL;
