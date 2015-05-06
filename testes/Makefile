@@ -19,8 +19,8 @@ teste_vetor_mutex: teste_vetor_mutex.c $(LIB_DIR)/libmthread.a
 mandel_atv_mutex: mandel_atv_mutex.c $(LIB_DIR)/libmthread.a
 	$(CC) -o mandel_atv_mutex mandel_atv_mutex.c -L$(LIB_DIR) -lmthread -Wall
 
-rc_adder: rc_adder.c $(LIB_DIR)/libmthread.a
-	$(CC) -o rc_adder rc_adder.c -L$(LIB_DIR) -lmthread -Wall
+mwait: mwait.c $(LIB_DIR)/libmthread.a
+	$(CC) -o mwait mwait.c -L$(LIB_DIR) -lmthread -Wall
 
 mmutex_init: mmutex_init.c $(LIB_DIR)/libmthread.a
 	$(CC) -o mmutex_init mmutex_init.c -L$(LIB_DIR) -lmthread -Wall
@@ -38,5 +38,5 @@ mcreate: mcreate.c $(LIB_DIR)/libmthread.a
 	$(CC) -o mcreate mcreate.c -L$(LIB_DIR) -lmthread -Wall
 
 clean:
-	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock myield mcreate mmutex_init *~
+	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex mwait mlock munlock myield mcreate mmutex_init *~
 
