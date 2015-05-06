@@ -59,7 +59,7 @@ int main() {
 	int i = 0;
 	int *index;
 
-	if(mmutex_init(&mutex) == 1){
+	if(mmutex_init(&mutex) == -1){
 		printf("Erro na inicialização do mutex.\n");
 		exit(0);
 	}
@@ -68,7 +68,6 @@ int main() {
 		index = malloc(sizeof(int));
 		*index = i;
 		tid[i] = mcreate(1, locker_room, (void *) index);
-		printf("Thread %d criada\n", tid[i]);
 	}
 
 	for(i = 0; i < MAX_THREADS; i++)
