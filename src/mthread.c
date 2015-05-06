@@ -6,7 +6,8 @@
 #include "../include/mthread.h"
 #define NUM_PRIO_LVLS 3
 #define MAX_THREADS 64
-#define UNLOCKED_MUTEX 0
+
+enum mutex_state { LIVRE, OCUPADO };
 
 enum state_t { CRIACAO, APTO, EXECUCAO, BLOQUEADO, TERMINO };
 
@@ -240,7 +241,7 @@ int myield(void)
 /* inicializa o mutex */
 int mmutex_init(mmutex_t *mtx)
 {
-	mtx->flag = UNLOCKED_MUTEX;
+	mtx->flag = LIVRE;
 	mtx->first = NULL;
 	mtx->last = NULL;
 	return 0;
@@ -260,8 +261,8 @@ int mlock(mmutex_t *mtx)
 	if(!mtx)
 		return -1;
 	/* mutex destrancado */
-	if(mtx->flag == UNLOCKED_MUTEX) {
-		mtx->flag = 1;
+	if(mtx->flag == LIVRE) {
+		mtx->flag = OCUPADO;
 		return 0;
 	}
 	else {
@@ -276,7 +277,7 @@ int mlock(mmutex_t *mtx)
 
 		mtx->last = ptr;
 		swapcontext(&executando->context, &sched_context);
-		mtx->flag = 1; /*processo vai executar: tranca mutex*/
+		mtx->flag = OCUPADO; /*processo vai executar: tranca mutex*/
 	}
 	return 0;
 }
@@ -293,11 +294,11 @@ int munlock(mmutex_t *mtx)
 	if(!mtx)
 		return -1;
 	/* mutex já estava liberado */
-	if(mtx->flag == UNLOCKED_MUTEX){
+	if(mtx->flag == LIVRE){
 		return 0;
 	}
 
-	mtx->flag = UNLOCKED_MUTEX;
+	mtx->flag = LIVRE;
 	/* nenhuma thread bloqueada */
 	if((task = dequeue(&mtx->first)) == NULL)
 		return 0;
