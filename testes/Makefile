@@ -31,6 +31,9 @@ munlock: munlock.c $(LIB_DIR)/libmthread.a
 myield: myield.c $(LIB_DIR)/libmthread.a
 	$(CC) -o myield myield.c -L$(LIB_DIR) -lmthread -Wall
 
+mcreate: mcreate.c $(LIB_DIR)/libmthread.a
+	$(CC) -o mcreate mcreate.c -L$(LIB_DIR) -lmthread -Wall
+
 clean:
-	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock myield *~
+	rm -rf simple_test exemplo3f teste_vetor_mutex mandel_atv_mutex rc_adder mlock munlock myield mcreate *~
 
